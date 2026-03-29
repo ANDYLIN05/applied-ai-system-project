@@ -168,7 +168,7 @@ class Scheduler:  # The "Brain"
         lines.append(f"\nTotal time: {total} min | Remaining: {self.owner.available_minutes - total} min")
 
         # Show skipped tasks
-        scheduled_tasks = {task for _, task in schedule}
+        scheduled_tasks = [task for _, task in schedule]
         skipped = [
             f"{pet.name}: {task.title}"
             for pet, task in self.owner.all_pet_tasks
