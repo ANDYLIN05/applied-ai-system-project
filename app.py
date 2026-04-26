@@ -1,5 +1,9 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
 import streamlit as st
 from pawpal_system import Owner, Pet, Task, Scheduler, Constraint
+from ai_advisor import PetCareAdvisor, AdvisorResult
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 
@@ -23,6 +27,9 @@ if "last_schedule" not in st.session_state:
 
 if "last_plan_text" not in st.session_state:
     st.session_state.last_plan_text = None
+
+if "advisor_result" not in st.session_state:
+    st.session_state.advisor_result = None
 
 # --- Owner & Pet Setup ---
 st.subheader("Owner & Pet Setup")
@@ -234,3 +241,71 @@ if st.button("Apply Filter"):
             st.table(filter_data)
         else:
             st.info("No tasks match the selected filter.")
+
+st.divider()
+
+# --- AI Care Advisor ---
+st.subheader("AI Care Advisor")
+st.caption(
+    "Uses Claude (claude-haiku-4-5) with a 5-step agentic workflow: "
+    "profile analysis → RAG retrieval → gap detection → suggestion generation → guardrail validation."
+)
+
+_api_key = os.environ.get("GOOGLE_API_KEY", "")
+if not _api_key:
+    st.warning(
+        "GOOGLE_API_KEY is not set. "
+        "Add it to your .env file and restart Streamlit to enable the AI advisor."
+    )
+else:
+    if st.button("Get AI Suggestions"):
+        if st.session_state.pet is None:
+            st.warning("Set an owner and pet first.")
+        else:
+            with st.spinner("Running AI advisor..."):
+                try:
+                    _advisor = PetCareAdvisor()
+                    _result: AdvisorResult = _advisor.advise(
+                        st.session_state.pet,
+                        st.session_state.pet.tasks,
+                    )
+                    st.session_state.advisor_result = _result
+                except Exception as exc:
+                    st.error(f"AI advisor error: {exc}")
+                    st.session_state.advisor_result = None
+
+    if st.session_state.advisor_result is not None:
+        _result = st.session_state.advisor_result
+
+        # Show agent steps
+        st.markdown("#### Agent Workflow Steps")
+        for step in _result.steps:
+            with st.expander(f"Step: {step.name}"):
+                st.write(step.result)
+
+        # Show guardrail warnings
+        if _result.warnings:
+            st.markdown("#### Guardrail Warnings")
+            for w in _result.warnings:
+                st.warning(w)
+
+        # Show suggestions
+        st.markdown("#### Suggested Tasks")
+        if not _result.suggestions:
+            st.success("All care areas are already covered — no new tasks needed!")
+        else:
+            for i, suggestion in enumerate(_result.suggestions):
+                t = suggestion.task
+                col_info, col_add = st.columns([5, 1])
+                with col_info:
+                    st.markdown(
+                        f"**{t.title}** — {t.duration_minutes} min | "
+                        f"{t.priority} priority | {t.frequency}"
+                    )
+                    st.caption(f"Why: {suggestion.reason}")
+                with col_add:
+                    if st.button("Add", key=f"ai_add_{i}"):
+                        if st.session_state.pet is not None:
+                            st.session_state.pet.add_task(t)
+                            st.success(f"Added '{t.title}' to {st.session_state.pet.name}!")
+                            st.rerun()
