@@ -1,0 +1,94 @@
+{
+  "dog": {
+    "exercise": [
+      "Daily walks of 30-60 minutes minimum",
+      "Active play sessions (fetch, tug) 20 min daily",
+      "Off-leash time in a safe area 2-3x per week",
+      "Swimming or running for high-energy breeds"
+    ],
+    "nutrition": [
+      "Feed 2x daily at consistent times",
+      "Fresh water available at all times",
+      "Avoid chocolate, grapes, onions, xylitol",
+      "Measure portions to prevent obesity"
+    ],
+    "grooming": [
+      "Brush coat 2-3x per week (daily for long-haired breeds)",
+      "Bathe every 4-6 weeks or as needed",
+      "Trim nails every 3-4 weeks",
+      "Clean ears weekly to prevent infection",
+      "Brush teeth 2-3x per week"
+    ],
+    "health": [
+      "Monthly flea and tick prevention",
+      "Annual vet checkup and vaccinations",
+      "Dental cleaning 1-2x per year",
+      "Heartworm prevention medication monthly"
+    ],
+    "socialization": [
+      "Social play with other dogs weekly",
+      "Daily training sessions 10-15 min",
+      "Positive reinforcement and handling",
+      "Exposure to new environments and people"
+    ]
+  },
+  "cat": {
+    "exercise": [
+      "Interactive play 2x daily, 10-15 min each session",
+      "Puzzle feeders for mental stimulation",
+      "Wand toys or laser pointer sessions daily",
+      "Cat trees or climbing structures for activity"
+    ],
+    "nutrition": [
+      "Feed 2-3x daily at consistent times",
+      "Wet food at least 1x daily for hydration",
+      "Fresh water or water fountain available always",
+      "Avoid onions, garlic, grapes, and xylitol"
+    ],
+    "grooming": [
+      "Brush coat 2-3x per week (daily for long-haired cats)",
+      "Clean litter box daily",
+      "Trim nails every 2-3 weeks",
+      "Wipe eyes and ears gently as needed"
+    ],
+    "health": [
+      "Annual vet checkup and vaccinations",
+      "Monthly flea prevention",
+      "Dental checkup annually",
+      "Monitor weight and appetite weekly"
+    ],
+    "socialization": [
+      "Lap time and bonding 15+ min daily",
+      "Window perch for environmental enrichment",
+      "Gentle handling and grooming sessions",
+      "Introduce toys and new stimuli regularly"
+    ]
+  },
+  "other": {
+    "exercise": [
+      "Species-appropriate physical activity daily",
+      "Out-of-cage time or supervised free roam as appropriate",
+      "Enrichment toys and activities"
+    ],
+    "nutrition": [
+      "Species-appropriate diet fed 1-2x daily",
+      "Fresh water replaced daily",
+      "Avoid foods toxic to the specific species"
+    ],
+    "grooming": [
+      "Habitat or cage cleaned weekly",
+      "Coat, feathers, or scales cared for as species requires",
+      "Nail or beak trimming as needed"
+    ],
+    "health": [
+      "Annual vet checkup with exotic/small animal specialist",
+      "Monitor for behavioral changes daily",
+      "Parasite prevention as recommended by vet"
+    ],
+    "socialization": [
+      "Daily handling and interaction",
+      "Mental stimulation through foraging or puzzle toys",
+      "Consistent routine to reduce stress"
+    ]
+  }
+}
