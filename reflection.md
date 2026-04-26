@@ -125,3 +125,33 @@ I would redesign the time field on Task to use a proper datetime.time object ins
 - What is one important thing you learned about designing systems or working with AI on this project?
 
 The most important thing I learned is that AI is most useful as a thought partner when you already have a clear question, not a vague one. Asking "help me build a pet scheduler" produces generic output. Asking "given that my Scheduler uses a greedy algorithm, what edge cases could cause it to skip a high-priority task?" produces targeted, actionable suggestions. The quality of AI help scales directly with the specificity and context you bring to the conversation.
+
+---
+
+## 6. AI Collaboration on the Extended System
+
+**a. How AI was used during development of the new features**
+
+When designing the AI Care Advisor, I used Claude as an architectural partner at each stage. During the agentic workflow design, I asked Claude to help me think through which steps should be separate agent stages versus collapsed into one. For example, I asked "should gap detection and knowledge retrieval be one step or two?" and Claude pointed out that keeping them separate made each step independently testable and made the intermediate output more meaningful to the user. That insight shaped the final five-step pipeline.
+
+For the guardrail design, I asked Claude to generate a list of ways a language model output could be malformed or unsafe for a scheduling app. That prompt produced the specific failure modes I ended up testing: missing title, out-of-range duration, non-integer duration, invalid priority, and invalid frequency. Having Claude enumerate the failure cases first meant the guardrail covered real risks rather than only the obvious ones.
+
+During implementation I also used Claude to write the first draft of the few-shot examples in `ai_advisor.py`. I then edited them by hand to make sure they reflected realistic species-specific differences (high-energy dog needing vigorous exercise vs. a low-energy cat needing wet food for hydration).
+
+**b. One helpful AI suggestion**
+
+The most helpful suggestion was adding prompt caching via `cache_control: {"type": "ephemeral"}` on the system prompt in the Claude API call. I had not considered caching because the system prompt is short, but Claude explained that even a short system prompt benefits from caching when the same advisor instance handles multiple sequential requests in a single Streamlit session. This reduced latency on the second and later advisor calls noticeably during testing.
+
+**c. One flawed AI suggestion**
+
+When I asked Claude to suggest a guardrail architecture, it initially proposed raising a Python exception for every invalid field rather than returning a warning and defaulting. That approach would have caused the entire suggestion to be silently dropped for something as minor as a model returning "monthly" instead of "weekly" for frequency. I rejected it because the right behavior for a soft error like an unrecognized frequency is to default and warn the user, not to discard a potentially good suggestion entirely. I rewrote `_validate()` to distinguish between hard rejections (empty title, out-of-range duration) and soft corrections (invalid priority or frequency).
+
+**d. System limitations and future improvements**
+
+The current system has several limitations worth noting:
+
+1. **Single pet per session** — The AI advisor runs on whichever pet is active in session state. A real system would let the user pick which pet to advise.
+2. **No memory across sessions** — Streamlit resets on page reload, so accepted suggestions are lost unless the user re-enters them. Persisting state to a database would fix this.
+3. **RAG is keyword-based** — Gap detection uses simple keyword matching on task titles. A pet owner who names a walk "Outdoor adventure" instead of "Morning walk" would still trigger the exercise gap even though exercise is covered. A small embedding-based similarity check would be more robust.
+4. **Claude hallucination risk** — Although guardrails catch structural errors, Claude could still suggest a task that is inappropriate for the specific pet (e.g., swimming for a dog that dislikes water). A future improvement would be a self-critique step where Claude reviews its own suggestions before they are passed to the guardrail validator.
+5. **No multi-pet coordination** — The scheduler handles multiple pets but the AI advisor only looks at one at a time. Coordinating suggestions across pets (e.g., "these two tasks are at the same time for different pets") is a natural next step.
