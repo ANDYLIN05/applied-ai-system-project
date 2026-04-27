@@ -50,7 +50,7 @@ Time budget came first since it is the hard limit that the whole schedule must f
 
 - Describe one tradeoff your scheduler makes.
 
-The scheduler uses a greedy first-fit algorithm: it sorts tasks by priority and then fills the schedule in order, skipping any task that no longer fits within the remaining time. This means a large high-priority task can block several smaller medium-priority tasks even if those smaller tasks would collectively fit.
+The scheduler uses a greedy first-fit algorithm: it sorts tasks by priority and then fills the schedule in order, skipping any task that no longer fits within the remaining time. This means a large high priority task can block several smaller medium-priority tasks even if those smaller tasks would collectively fit.
 
 - Why is that tradeoff reasonable for this scenario?
 
@@ -132,26 +132,38 @@ The most important thing I learned is that AI is most useful as a thought partne
 
 **a. How AI was used during development of the new features**
 
-When designing the AI Care Advisor, I used Claude as an architectural partner at each stage. During the agentic workflow design, I asked Claude to help me think through which steps should be separate agent stages versus collapsed into one. For example, I asked "should gap detection and knowledge retrieval be one step or two?" and Claude pointed out that keeping them separate made each step independently testable and made the intermediate output more meaningful to the user. That insight shaped the final five-step pipeline.
+When designing the AI Care Advisor, I used AI as an architectural partner at each stage. During the agentic workflow design, I asked the AI to help me think through which steps should be separate agent stages versus collapsed into one. For example, I asked "should gap detection and knowledge retrieval be one step or two?" and the AI pointed out that keeping them separate made each step independently testable and made the intermediate output more meaningful to the user. That insight shaped the final five-step pipeline.
 
-For the guardrail design, I asked Claude to generate a list of ways a language model output could be malformed or unsafe for a scheduling app. That prompt produced the specific failure modes I ended up testing: missing title, out-of-range duration, non-integer duration, invalid priority, and invalid frequency. Having Claude enumerate the failure cases first meant the guardrail covered real risks rather than only the obvious ones.
+For the guardrail design, I asked the AI to generate a list of ways a language model output could be malformed or unsafe for a scheduling app. That prompt produced the specific failure modes I ended up testing: missing title, out of range duration, non-integer duration, invalid priority, and invalid frequency. Having the AI enumerate the failure cases first meant the guardrail covered real risks rather than only the obvious ones.
 
-During implementation I also used Claude to write the first draft of the few-shot examples in `ai_advisor.py`. I then edited them by hand to make sure they reflected realistic species-specific differences (high-energy dog needing vigorous exercise vs. a low-energy cat needing wet food for hydration).
+During implementation I also used the AI to write the first draft of the few shot examples in `ai_advisor.py`. I then edited them by hand to make sure they reflected realistic species specific differences (high energy dog needing vigorous exercise vs. a low energy cat needing wet food for hydration).
 
 **b. One helpful AI suggestion**
 
-The most helpful suggestion was adding prompt caching via `cache_control: {"type": "ephemeral"}` on the system prompt in the Claude API call. I had not considered caching because the system prompt is short, but Claude explained that even a short system prompt benefits from caching when the same advisor instance handles multiple sequential requests in a single Streamlit session. This reduced latency on the second and later advisor calls noticeably during testing.
+The most helpful suggestion was the AI's recommendation to keep RAG retrieval and gap detection as two separate pipeline steps rather than combining them into one. My initial design collapsed both into a single "analyze" step. The AI pointed out that splitting them makes each step independently testable and gives the user a more meaningful intermediate view: the retrieval step shows which species specific facts were loaded, while the gap detection step shows which care categories are actually missing. That separation is directly visible in the final five step pipeline in `ai_advisor.py`, where Step 2 (knowledge retrieval) and Step 3 (gap detection) are distinct `AgentStep` records with separate outputs shown in the Streamlit UI collapsible sections.
 
 **c. One flawed AI suggestion**
 
-When I asked Claude to suggest a guardrail architecture, it initially proposed raising a Python exception for every invalid field rather than returning a warning and defaulting. That approach would have caused the entire suggestion to be silently dropped for something as minor as a model returning "monthly" instead of "weekly" for frequency. I rejected it because the right behavior for a soft error like an unrecognized frequency is to default and warn the user, not to discard a potentially good suggestion entirely. I rewrote `_validate()` to distinguish between hard rejections (empty title, out-of-range duration) and soft corrections (invalid priority or frequency).
+When I asked the AI to suggest a guardrail architecture, it initially proposed raising a Python exception for every invalid field rather than returning a warning and defaulting. That approach would have caused the entire suggestion to be silently dropped for something as minor as a model returning "monthly" instead of "weekly" for frequency. I rejected it because the right behavior for a soft error like an unrecognized frequency is to default and warn the user, not to discard a potentially good suggestion entirely. I rewrote `_validate()` to distinguish between hard rejections (empty title, out of range duration) and soft corrections (invalid priority or frequency).
 
 **d. System limitations and future improvements**
 
 The current system has several limitations worth noting:
 
-1. **Single pet per session** — The AI advisor runs on whichever pet is active in session state. A real system would let the user pick which pet to advise.
-2. **No memory across sessions** — Streamlit resets on page reload, so accepted suggestions are lost unless the user re-enters them. Persisting state to a database would fix this.
-3. **RAG is keyword-based** — Gap detection uses simple keyword matching on task titles. A pet owner who names a walk "Outdoor adventure" instead of "Morning walk" would still trigger the exercise gap even though exercise is covered. A small embedding-based similarity check would be more robust.
-4. **Claude hallucination risk** — Although guardrails catch structural errors, Claude could still suggest a task that is inappropriate for the specific pet (e.g., swimming for a dog that dislikes water). A future improvement would be a self-critique step where Claude reviews its own suggestions before they are passed to the guardrail validator.
-5. **No multi-pet coordination** — The scheduler handles multiple pets but the AI advisor only looks at one at a time. Coordinating suggestions across pets (e.g., "these two tasks are at the same time for different pets") is a natural next step.
+1. **Single pet per session** - The AI advisor runs on whichever pet is active in session state. A real system would let the user pick which pet to advise.
+2. **No memory across sessions** - Streamlit resets on page reload, so accepted suggestions are lost unless the user re-enters them. Persisting state to a database would fix this.
+3. **RAG is keyword-based** - Gap detection uses simple keyword matching on task titles. A pet owner who names a walk "Outdoor adventure" instead of "Morning walk" would still trigger the exercise gap even though exercise is covered. A small embedding-based similarity check would be more robust.
+4. **Gemini hallucination risk** - Although guardrails catch structural errors, Gemini 2.5 Flash could still suggest a task that is inappropriate for the specific pet (e.g., swimming for a dog that dislikes water). A future improvement would be a self-critique step where the model reviews its own suggestions before they are passed to the guardrail validator.
+5. **No multi-pet coordination** - The scheduler handles multiple pets but the AI advisor only looks at one at a time. Coordinating suggestions across pets (e.g., "these two tasks are at the same time for different pets") is a natural next step.
+
+---
+
+## 7. Ethics and Reliability
+
+**a. Could your AI be misused, and how would you prevent it?**
+
+The AI Care Advisor could be misused in a few ways. A user could enter a fabricated or extreme pet profile to fish for suggestions the knowledge base was not designed to support. More seriously, a user could treat the AI's suggestions as authoritative medical guidance rather than as starting points for a care routine. The guardrails already prevent structurally malformed output, and the KB facts are hand-curated to stay general and safe. Two additional safeguards worth adding in a future version: a visible disclaimer in the UI stating that suggestions are not a substitute for veterinary advice, and a keyword blocklist that rejects any generated task title containing medical treatment language like "administer," "inject," or "diagnose."
+
+**b. What surprised you while testing your AI's reliability?**
+
+The most surprising finding was where the model failed. I expected the main risk to be missing or malformed JSON fields. Instead, Gemini 2.5 Flash produced structurally valid output consistently, but occasionally used synonyms the system did not expect "urgent" instead of "high" for priority, or "bi-weekly" instead of "weekly" for frequency. These passed a human reading but failed exact-match validation. That pattern reinforced the design decision to use soft corrections with warnings for vocabulary fields rather than hard rejections: discarding a useful suggestion because of a synonym would be a worse outcome than defaulting and notifying the user.
