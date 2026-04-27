@@ -53,7 +53,6 @@ st.divider()
 
 # --- Add Tasks ---
 st.subheader("Add Tasks")
-st.caption("Tasks are added directly to your pet via Pet.add_task().")
 
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -135,7 +134,6 @@ st.divider()
 
 # --- Build Schedule ---
 st.subheader("Build Schedule")
-st.caption("Calls Scheduler.build_master_schedule(), sort_by_time(), and detect_conflicts().")
 
 col_gen, col_reset = st.columns(2)
 with col_gen:
@@ -204,7 +202,6 @@ st.divider()
 
 # --- Filter Tasks ---
 st.subheader("Filter Tasks")
-st.caption("Uses Scheduler.filter_tasks() to search across all pets.")
 
 filter_col1, filter_col2 = st.columns(2)
 with filter_col1:
@@ -246,10 +243,6 @@ st.divider()
 
 # --- AI Care Advisor ---
 st.subheader("AI Care Advisor")
-st.caption(
-    "Uses Claude (claude-haiku-4-5) with a 5-step agentic workflow: "
-    "profile analysis → RAG retrieval → gap detection → suggestion generation → guardrail validation."
-)
 
 _api_key = os.environ.get("GOOGLE_API_KEY", "")
 if not _api_key:
