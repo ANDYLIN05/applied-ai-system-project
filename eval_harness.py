@@ -1,15 +1,6 @@
-#!/usr/bin/env python3
+
 """
 eval_harness.py — PawPal+ evaluation script.
-
-Tests four areas:
-  1. Core scheduling logic (no API needed)
-  2. AI advisor guardrails (no API needed)
-  3. RAG gap detection (no API needed)
-  4. Live AI advisor end-to-end (requires ANTHROPIC_API_KEY)
-
-Run:
-    python eval_harness.py
 """
 
 import os
@@ -117,10 +108,10 @@ msg = sched4.explain_plan([])
 check("explain_plan returns 'no tasks' message for empty schedule", "No tasks" in msg)
 
 # ---------------------------------------------------------------------------
-# Section 2: AI Advisor Guardrails (offline — no API call)
+# Section 2: AI Advisor Guardrails
 # ---------------------------------------------------------------------------
 
-section("2. AI Advisor Guardrails (offline)")
+section("2. AI Advisor Guardrails")
 
 advisor = PetCareAdvisor()
 
@@ -159,14 +150,14 @@ check("Non-integer duration rejected", t_str is None)
 t_pri, w_pri = advisor._validate({
     "title": "Nap", "duration_minutes": 15, "priority": "extreme", "frequency": "daily"
 })
-check("Invalid priority defaults to medium (not rejected)", t_pri is not None and t_pri.priority == "medium")
+check("Invalid priority defaults to medium", t_pri is not None and t_pri.priority == "medium")
 check("Warning issued for invalid priority", len(w_pri) > 0)
 
 # Invalid frequency → defaulted, not rejected
 t_freq, w_freq = advisor._validate({
     "title": "Bath", "duration_minutes": 20, "priority": "low", "frequency": "monthly"
 })
-check("Invalid frequency defaults to once (not rejected)", t_freq is not None and t_freq.frequency == "once")
+check("Invalid frequency defaults to once", t_freq is not None and t_freq.frequency == "once")
 check("Warning issued for invalid frequency", len(w_freq) > 0)
 
 # Title too long → truncated, not rejected
@@ -174,7 +165,7 @@ long_title = "A" * 150
 t_long, w_long = advisor._validate({
     "title": long_title, "duration_minutes": 10, "priority": "low", "frequency": "once"
 })
-check("Oversized title truncated to 100 chars (not rejected)", t_long is not None and len(t_long.title) == 100)
+check("Oversized title truncated to 100 chars", t_long is not None and len(t_long.title) == 100)
 
 # ---------------------------------------------------------------------------
 # Section 3: RAG gap detection
@@ -211,10 +202,10 @@ gaps_after_groom = advisor._detect_gaps(dog_facts, pet_gap.tasks)
 check("Grooming gap closes after adding a brush task", "grooming" not in gaps_after_groom)
 
 # ---------------------------------------------------------------------------
-# Section 4: Live AI Advisor (requires ANTHROPIC_API_KEY)
+# Section 4: Live AI Advisor (requires GOOGLE_API_KEY)
 # ---------------------------------------------------------------------------
 
-section("4. Live AI Advisor (requires ANTHROPIC_API_KEY)")
+section("4. Live AI Advisor (requires GOOGLE_API_KEY)")
 
 api_key = os.environ.get("GOOGLE_API_KEY", "")
 if not api_key:
