@@ -1,12 +1,5 @@
 """
-AI-powered pet care advisor using Google Gemini API (free tier).
-
-5-step agentic workflow:
-  1. Profile Analysis    — summarize the pet and existing tasks
-  2. Knowledge Retrieval — RAG lookup from pet_care_kb.json
-  3. Gap Detection       — find uncovered care categories
-  4. Suggestion Generation — call Gemini to produce task ideas
-  5. Validation & Guardrails — enforce safe, well-formed output
+AI-powered pet care advisor using Google Gemini API.
 """
 
 import json
@@ -98,7 +91,7 @@ class PetCareAdvisor:
                 raise ValueError("GOOGLE_API_KEY is not set.")
             genai.configure(api_key=api_key)
             self._model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",
+                model_name="gemini-2.5-flash",
                 system_instruction=SYSTEM_INSTRUCTION,
             )
         return self._model
@@ -184,7 +177,7 @@ class PetCareAdvisor:
     # Main entry point
     # ------------------------------------------------------------------
 
-    def advise(self, pet: Pet, existing_tasks: list[Task]) -> AdvisorResult:
+    def advise(self, pet: Pet, existing_tasks: list[Task], use_few_shot: bool = True) -> AdvisorResult:
         """Run the 5-step agentic workflow and return results with observable steps."""
         result = AdvisorResult()
 
@@ -224,6 +217,8 @@ class PetCareAdvisor:
 
         gap_facts = {cat: facts[cat] for cat in gaps if cat in facts}
 
+        few_shot_block = f"{FEW_SHOT_EXAMPLES}\n" if use_few_shot else ""
+
         user_prompt = (
             f"Pet profile:\n"
             f"  Name: {pet.name}\n"
@@ -233,7 +228,7 @@ class PetCareAdvisor:
             f"Uncovered care areas: {', '.join(gaps)}\n\n"
             f"Relevant care guidelines for these areas:\n"
             f"{json.dumps(gap_facts, indent=2)}\n\n"
-            f"{FEW_SHOT_EXAMPLES}\n"
+            f"{few_shot_block}"
             f"Now suggest 2-4 NEW tasks that fill ONLY the uncovered areas above.\n"
             f"Do NOT duplicate any existing task.\n"
             f"Respond with ONLY a valid JSON array — no markdown, no extra text.\n\n"
